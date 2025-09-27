@@ -30,7 +30,7 @@ interface UploadResponse {
   };
 }
 
-const API_BASE = API_BASE_URL || "http://localhost:8000";
+const API_BASE = API_BASE_URL
 
 const GoogleLoginWithHR: React.FC = () => {
   const [step, setStep] = useState<
