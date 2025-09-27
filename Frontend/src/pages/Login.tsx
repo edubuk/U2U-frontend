@@ -30,7 +30,6 @@ interface UploadResponse {
   };
 }
 
-const API_BASE = API_BASE_URL
 
 const GoogleLoginWithHR: React.FC = () => {
   const [step, setStep] = useState<
@@ -93,7 +92,7 @@ const GoogleLoginWithHR: React.FC = () => {
     setInfoMessage(null);
 
     try {
-      const res = await fetch(`${API_BASE}/hr/me`, {
+      const res = await fetch(`${API_BASE_URL}/hr/me`, {
         method: "GET",
         headers: { Authorization: `Bearer ${googleToken}` },
       });
@@ -146,7 +145,7 @@ const GoogleLoginWithHR: React.FC = () => {
           : [],
       };
 
-      const res = await fetch(`${API_BASE}/hr/register`, {
+      const res = await fetch(`${API_BASE_URL}/hr/register`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${googleToken}`,
