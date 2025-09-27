@@ -1,8 +1,7 @@
 // TruJobsPortal.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useUserData } from "@/context/AuthContext";
 import { Link } from "react-router-dom";
-import { ArrowRightIcon } from "lucide-react";
+import { ArrowDown, ArrowRightIcon } from "lucide-react";
 import { Cv_resoponse_type } from "@/types";
 import { API_BASE_URL } from "@/main";
 import toast from "react-hot-toast";
@@ -39,19 +38,19 @@ function TruJobsPortal() {
   const [appliedJob, setAppliedJob] = useState<Job | null>(null);
   const [showApplyModal, setShowApplyModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const {nanoId} = useUserData();
+  const [nanoIds, setNanoIds] = useState<string[]>([]);
   const [applyJsonData, setApplyJsonData] = useState(
     {
       "resume_json": {
-        "nano_Id":"",
+        "nano_Id": "",
         "name": "",
-        "contact":{"email": "","phone": "","location":"","profession":"","yearOfExperience":""},
-        "education":null,
+        "contact": { "email": "", "phone": "", "location": "", "profession": "", "yearOfExperience": "" },
+        "education": null,
         "experience": null,
         "achievements": null,
         "skills": null
       },
-      "job_description_id":""
+      "job_description_id": ""
     }
   );
 
@@ -60,6 +59,39 @@ function TruJobsPortal() {
     fetchServerJobs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const fetchData = async () => {
+    const loginMailId = localStorage.getItem("email");
+    setLoading(true);
+    if (!loginMailId) {
+      console.warn("No login email found in localStorage");
+      return;
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/cv/getCvIds/${loginMailId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${localStorage.getItem("googleIdToken")}`,
+        },
+      });
+
+      const data = await response.json();
+      console.log("User response", data);
+
+      if (!data.success) {
+        console.error(data.message);
+        return;
+      }
+      setNanoIds(data?.userData?.nanoIds);
+      setLoading(false);
+    } catch (err) {
+      toast.error("Something went wrong while fetching user data");
+      console.log("Error fetching user plan", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // helper to call the /allJobs endpoint with optional server-side params
   const fetchServerJobs = async (overrides?: Record<string, any>) => {
@@ -166,66 +198,66 @@ function TruJobsPortal() {
     if (!s) return "-";
     if (typeof s === "string") return s;
     const min = s.min, max = s.max, cur = s.currency || "INR";
-    if (min !== undefined && max !== undefined) return `${min/1000}K-${max/1000}K ${cur}`;
-    if (min !== undefined) return `From ${min/1000}K ${cur}`;
-    if (max !== undefined) return `Up to ${max/1000}K ${cur}`;
+    if (min !== undefined && max !== undefined) return `${min / 1000}K-${max / 1000}K ${cur}`;
+    if (min !== undefined) return `From ${min / 1000}K ${cur}`;
+    if (max !== undefined) return `Up to ${max / 1000}K ${cur}`;
     return "-";
   }
 
 
 
- const getCvRequest = async (selectedNanoId:string): Promise<Cv_resoponse_type> => {
-     const response = await fetch(`${API_BASE_URL}/cv/getCvByNanoId/${selectedNanoId}`);
-     if (!response.ok) {
-       throw new Error("Could not get cv!");
-     }
-    const data= await response.json();
-    console.log("cv data",data)
+  const getCvRequest = async (selectedNanoId: string): Promise<Cv_resoponse_type> => {
+    const response = await fetch(`${API_BASE_URL}/cv/getCvByNanoId/${selectedNanoId}`);
+    if (!response.ok) {
+      throw new Error("Could not get cv!");
+    }
+    const data = await response.json();
+    console.log("cv data", data)
     setApplyJsonData({
       "resume_json": {
-        "nano_Id":data.nanoId,
+        "nano_Id": data.nanoId,
         "name": data.personalDetails.name,
-        "contact": {"email": data.personalDetails.email,"phone": data.personalDetails.phone,"location": data.personalDetails.location,"profession": data.personalDetails.profession,"yearOfExperience": data.personalDetails.years_of_experience},
-        "education":data.education,
+        "contact": { "email": data.personalDetails.email, "phone": data.personalDetails.phone, "location": data.personalDetails.location, "profession": data.personalDetails.profession, "yearOfExperience": data.personalDetails.years_of_experience },
+        "education": data.education,
         "experience": data.experience,
         "achievements": data.achievements,
         "skills": data.skills
       },
-      "job_description_id":""
+      "job_description_id": ""
     })
-    console.log("apply json data",applyJsonData)
+    console.log("apply json data", applyJsonData)
     return data;
-     
-   };
+
+  };
 
 
-  const applyJobHandler = async (job_description_id:string) => {
+  const applyJobHandler = async (job_description_id: string) => {
     setLoading(true);
     try {
-    const response = await fetch(`${API_BASE_URL}/job/apply-job`, {
-      method: "POST",
-      body: JSON.stringify({
-        "resume_json": applyJsonData.resume_json,
-        "job_description_id": job_description_id
-      }),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("googleIdToken")}`,
-      },
-    });
-    const data = await response.json();
-    console.log("apply job data",data)
-    if(data.success){
-      toast.success("Job applied successfully!");
-      closeApply();
-    }
-    if (!data.success) {
-      console.log("apply job error",data.error)
-      toast.error(data.error);
-    }
-    setLoading(false);
-    } catch (error:any) {
-      console.log("apply job error",error)
+      const response = await fetch(`${API_BASE_URL}/job/apply-job`, {
+        method: "POST",
+        body: JSON.stringify({
+          "resume_json": applyJsonData.resume_json,
+          "job_description_id": job_description_id
+        }),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("googleIdToken")}`,
+        },
+      });
+      const data = await response.json();
+      console.log("apply job data", data)
+      if (data.success) {
+        toast.success("Job applied successfully!");
+        closeApply();
+      }
+      if (!data.success) {
+        console.log("apply job error", data.error)
+        toast.error(data.error);
+      }
+      setLoading(false);
+    } catch (error: any) {
+      console.log("apply job error", error)
       toast.error(error?.message);
       setLoading(false);
     }
@@ -253,39 +285,39 @@ function TruJobsPortal() {
             <div className="space-y-3">
               <div>
                 <label className="text-xs text-gray-600">Search</label>
-                <input value={search} onChange={(e)=>setSearch(e.target.value)} className="w-full mt-1 border rounded-lg px-3 py-2" placeholder="Job title, company, keyword" />
+                <input value={search} onChange={(e) => setSearch(e.target.value)} className="w-full mt-1 border rounded-lg px-3 py-2" placeholder="Job title, company, keyword" />
               </div>
 
               <div>
                 <label className="text-xs text-gray-600">Company</label>
-                <select value={companyFilter} onChange={(e)=>setCompanyFilter(e.target.value)} className="w-full mt-1 border rounded-lg px-3 py-2">
+                <select value={companyFilter} onChange={(e) => setCompanyFilter(e.target.value)} className="w-full mt-1 border rounded-lg px-3 py-2">
                   <option value="">All companies</option>
-                  {companies.map(c=> <option key={c} value={c}>{c}</option>)}
+                  {companies.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
 
               <div>
                 <label className="text-xs text-gray-600">Role</label>
-                <select value={roleFilter} onChange={(e)=>setRoleFilter(e.target.value)} className="w-full mt-1 border rounded-lg px-3 py-2">
+                <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="w-full mt-1 border rounded-lg px-3 py-2">
                   <option value="">All roles</option>
-                  {roles.map(r=> <option key={r} value={r}>{r}</option>)}
+                  {roles.map(r => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs text-gray-600">Min (LPA)</label>
-                  <input type="number" value={minPackage as any} onChange={(e)=>setMinPackage(e.target.value?Number(e.target.value):"")} className="w-full mt-1 border rounded-lg px-3 py-2" placeholder="Min" />
+                  <input type="number" value={minPackage as any} onChange={(e) => setMinPackage(e.target.value ? Number(e.target.value) : "")} className="w-full mt-1 border rounded-lg px-3 py-2" placeholder="Min" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-600">Max (LPA)</label>
-                  <input type="number" value={maxPackage as any} onChange={(e)=>setMaxPackage(e.target.value?Number(e.target.value):"")} className="w-full mt-1 border rounded-lg px-3 py-2" placeholder="Max" />
+                  <input type="number" value={maxPackage as any} onChange={(e) => setMaxPackage(e.target.value ? Number(e.target.value) : "")} className="w-full mt-1 border rounded-lg px-3 py-2" placeholder="Max" />
                 </div>
               </div>
 
               <div>
                 <label className="text-xs text-gray-600">Sort</label>
-                <select value={sortBy} onChange={(e)=>setSortBy(e.target.value as any)} className="w-full mt-1 border rounded-lg px-3 py-2">
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)} className="w-full mt-1 border rounded-lg px-3 py-2">
                   <option value="newest">Newest</option>
                   <option value="package_desc">Package: High → Low</option>
                   <option value="package_asc">Package: Low → High</option>
@@ -293,8 +325,8 @@ function TruJobsPortal() {
               </div>
 
               <div className="flex gap-2 mt-2">
-                <button onClick={()=>{setSearch("");setCompanyFilter("");setRoleFilter("");setMinPackage("");setMaxPackage("");setSortBy("newest");fetchServerJobs();}} className="px-3 py-2 rounded-lg border">Clear</button>
-                <button onClick={()=>fetchServerJobs()} className="px-3 py-2 rounded-lg bg-[#03257e] text-white">Apply</button>
+                <button onClick={() => { setSearch(""); setCompanyFilter(""); setRoleFilter(""); setMinPackage(""); setMaxPackage(""); setSortBy("newest"); fetchServerJobs(); }} className="px-3 py-2 rounded-lg border">Clear</button>
+                <button onClick={() => fetchServerJobs()} className="px-3 py-2 rounded-lg bg-[#03257e] text-white">Apply</button>
               </div>
             </div>
           </aside>
@@ -307,7 +339,7 @@ function TruJobsPortal() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {filtered.map(job=> (
+              {filtered.map(job => (
                 <article key={job.id || job._id} className="bg-white rounded-2xl shadow p-4 flex flex-col justify-between">
                   <div>
                     <div className="flex items-start justify-between gap-3">
@@ -315,7 +347,7 @@ function TruJobsPortal() {
                         <div className="font-semibold text-lg text-[#03257e]">{job.title}</div>
                         <div className="text-sm text-gray-500">{job.company} • {job.location} {job.isRemote ? "• Remote" : ""}</div>
                         <div className="mt-2 text-xs">
-                          {job.tags?.slice(0,4).map(t=> <span key={t} className="inline-block mr-2 px-2 py-1 bg-gray-100 rounded text-xs">{t}</span>)}
+                          {job.tags?.slice(0, 4).map(t => <span key={t} className="inline-block mr-2 px-2 py-1 bg-gray-100 rounded text-xs">{t}</span>)}
                         </div>
                       </div>
                       <div className="text-right">
@@ -330,13 +362,13 @@ function TruJobsPortal() {
                   <div className="mt-4 flex items-center justify-between">
                     <div className="text-xs text-gray-500">Posted: {job.postedAt ? new Date(job.postedAt).toLocaleDateString() : "-"}</div>
                     <div className="flex gap-2">
-                      <a href={job.applyUrl || "#"} onClick={(e)=>{e.preventDefault(); openApply(job);}} className="px-4 py-2 rounded-lg bg-[#f14491] text-white text-sm">Apply</a>
+                      <a href={job.applyUrl || "#"} onClick={(e) => { e.preventDefault(); openApply(job); }} className="px-4 py-2 rounded-lg bg-[#f14491] text-white text-sm">Apply</a>
                     </div>
                   </div>
                 </article>
               ))}
 
-              {filtered.length===0 && !loading && (
+              {filtered.length === 0 && !loading && (
                 <div className="lg:col-span-3 bg-white rounded-2xl shadow p-6 text-center text-gray-500">No jobs availables or  no jobs match your filters. Try clearing filters.</div>
               )}
             </div>
@@ -359,16 +391,33 @@ function TruJobsPortal() {
               <p className="text-sm font-sans"><span className="font-semibold">Employment Type:</span> {appliedJob?.employmentType}</p>
               <p className="text-sm font-sans"><span className="font-semibold">Required Skills:</span> {appliedJob?.tags?.join(", ")}</p>
             </div>
-            {nanoId?.length>0?<div className="mt-4 flex flex-col gap-4">
-              <p className="text-md text-[#03257e]">You have <span className="font-semibold text-[#006666]">{nanoId?.length}</span> resume created. Please select one to apply.</p>
-              <select className="w-full border rounded-lg px-3 py-2 " onChange={(e)=>{getCvRequest(e.target.value)}}>
+            {nanoIds?.length > 0 ? <div className="mt-4 flex flex-col gap-4">
+              <p className="text-md text-[#03257e]">You have <span className="font-semibold text-[#006666]">{nanoIds?.length}</span> resume created. Please select one to apply.</p>
+              <select className="w-full border rounded-lg px-3 py-2 " onChange={(e) => { getCvRequest(e.target.value) }}>
                 <option value="">Select a resume</option>
-                {nanoId.map(id=> <option key={id} value={id}>Resume {id}</option>)}
+                {nanoIds.map(id => <option key={id} value={id}>Resume {id}</option>)}
               </select>
-              {!loading?<button className="mt-4 w-full bg-[#03257e] text-white text-sm font-semibold py-2 px-4 rounded hover:bg-[#006666] transition" onClick={()=>{applyJobHandler(appliedJob?.job_description_id || "")}}>Apply</button>:<p className="mt-4 w-full text-center text-[#006666] text-sm font-semibold py-2 px-4 rounded transition">Applying...</p>}
-            </div>:<div className="mt-4 flex justify-center justify-items-center flex-col gap-4">
-              <p className="text-sm text-[#f14419]">We didn't find any resume in your account. Please create a resume to apply.</p>
-              <Link to="/create-cv" className="mt-4 bg-[#03257e] text-center text-white text-sm font-semibold py-2 px-4 rounded hover:bg-[#006666] transition">Create Resume <ArrowRightIcon className="inline w-4 h-4 ml-2" /></Link>
+              {!loading ? <button className="mt-4 w-full bg-[#03257e] text-white text-sm font-semibold py-2 px-4 rounded hover:bg-[#006666] transition" onClick={() => { applyJobHandler(appliedJob?.job_description_id || "") }}>Apply</button> : <p className="mt-4 w-full text-center text-[#006666] text-sm font-semibold py-2 px-4 rounded transition">Applying...</p>}
+            </div> : <div className="mt-4 flex justify-center justify-items-center flex-col gap-4">
+              <p className="text-sm text-[#f14419]">Do you have a created resume? If not, you can create one or fetch your resume from your logged in account.</p>
+              <div className="flex gap-2 items-center justify-center">
+                {
+                  nanoIds?.length > 0
+                    ? ""
+                    : loading
+                      ? <p className="text-sm text-[#006666] text-center">Fetching Resume...</p>
+                      : (
+                        <button
+                          className="mt-4 bg-[#006666] text-center text-white text-sm font-semibold py-2 px-4 rounded hover:bg-[#008888] transition"
+                          onClick={fetchData}
+                        >
+                          Fetch Resume <ArrowDown className="inline w-4 h-4 ml-2" />
+                        </button>
+                      )
+                }
+
+                <Link to="/create-cv" className="mt-4 bg-[#03257e] text-center text-white text-sm font-semibold py-2 px-4 rounded hover:bg-[#006666] transition">Create Resume <ArrowRightIcon className="inline w-4 h-4 ml-2" /></Link>
+              </div>
             </div>}
           </div>
         </div>
