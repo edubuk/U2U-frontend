@@ -7,7 +7,6 @@ import { Cv_resoponse_type } from "@/types";
 import { API_BASE_URL } from "@/main";
 import toast from "react-hot-toast";
 
-
 type Job = {
   id: string;
   _id?: string;
@@ -27,7 +26,7 @@ type Job = {
   postedAt?: string;
 };
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = API_BASE_URL || "http://localhost:8000";
 
 function TruJobsPortal() {
   const [jobs, setJobs] = useState<Job[]>([]);

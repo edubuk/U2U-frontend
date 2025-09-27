@@ -76,7 +76,7 @@ type SimilarityResponse = {
 };
 /** ----------------------------------------- */
 
-const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8000";
+const API_BASE = API_BASE_URL || "http://localhost:8000";
 
 export default function HRDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
